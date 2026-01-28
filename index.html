@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Учёт телевизоров</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <h1>Добавить кабинет и IP</h1>
+
+  <div class="form-group">
+    <label>Номер кабинета: <input type="text" id="room"></label>
+  </div>
+  <div class="form-group">
+    <label>Последняя цифра IP (1–254): <input type="number" id="lastOctet" min="1" max="254"></label>
+    <div id="error" class="error"></div>
+  </div>
+  <button onclick="addTv()">Добавить</button>
+
+  <h2>Список кабинетов</h2>
+  <table id="tvTable">
+    <thead><tr><th>Кабинет</th><th>IP</th></tr></thead>
+    <tbody id="tvList"></tbody>
+  </table>
+
+  <script src="script.js"></script>
+</body>
+</html>
