@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Центральный учёт устройств</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>📺 Центральный учёт устройств</h1>
+
+    <div class="form-group">
+      <label>Кабинет: <input type="text" id="room" placeholder="101"></label>
+    </div>
+    <div class="form-group">
+      <label>Последняя цифра IP (1–254): 
+        <input type="number" id="lastOctet" min="1" max="254" placeholder="50">
+      </label>
+      <div id="error" class="error"></div>
+    </div>
+    <button onclick="addDevice()">Добавить</button>
+
+    <h2>Список устройств</h2>
+    <table id="deviceTable">
+      <thead>
+        <tr><th>Кабинет</th><th>IP-адрес</th><th>Действие</th></tr>
+      </thead>
+      <tbody id="deviceList"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadDevices() {
+      try {
+        const res = await fetch('/api/devices');
+        const devices = await res.json();
+        const tbody = document.getElementById('deviceList');
+        if (devices.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="empty">Нет данных</td></tr>';
+          return;
+        }
+        tbody.innerHTML = devices.map(d => `
+          <tr>
+            <td>${d.room}</td>
+            <td>${d.ip}</td>
+            <td><button class="delete-btn" onclick="deleteDevice(${d.id})">Удалить</button></td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+        document.getElementById('deviceList').innerHTML = '<tr><td colspan="3" class="error">Ошибка загрузки</td></tr>';
+      }
+    }
+
+    async function addDevice() {
+      const room = document.getElementById('room').value.trim();
+      const lastOctet = document.getElementById('lastOctet').value.trim();
+      const err = document.getElementById('error');
+      err.textContent = '';
+
+      if (!room || !lastOctet) {
+        err.textContent = 'Заполните все поля';
+        return;
+      }
+
+      const num = +lastOctet;
+      if (num < 1 || num > 254 || !Number.isInteger(num)) {
+        err.textContent = 'Последняя цифра: 1–254';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/devices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room, lastOctet })
+        });
+        const result = await res.json();
+        if (res.ok) {
+          document.getElementById('room').value = '';
+          document.getElementById('lastOctet').value = '';
+          loadDevices();
+        } else {
+          err.textContent = result.error || 'Ошибка сервера';
+        }
+      } catch (e) {
+        err.textContent = 'Не удалось подключиться к серверу';
+      }
+    }
+
+    async function deleteDevice(id) {
+      if (!confirm('Удалить устройство?')) return;
+      try {
+        const res = await fetch(`/api/devices/${id}`, { method: 'DELETE' });
+        if (res.ok) loadDevices();
+        else alert('Ошибка удаления');
+      } catch (e) {
+        alert('Не удалось удалить');
+      }
+    }
+
+    // Загрузка при старте
+    loadDevices();
+  </script>
+</body>
+</html>
